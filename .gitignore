@@ -1,0 +1,17 @@
+# Wi-Fi and OTA passwords — never commit
+firmware/desk_controller/secrets.h
+
+# Arduino / PlatformIO build output
+build/
+.pio/
+*.bin
+*.elf
+*.map
+
+# Editors and OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini

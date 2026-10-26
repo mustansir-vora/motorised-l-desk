@@ -1,0 +1,30 @@
+name: firmware
+
+on:
+  push:
+    paths: ["firmware/**", ".github/workflows/firmware.yml"]
+  pull_request:
+    paths: ["firmware/**"]
+  workflow_dispatch:
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # CI uses the placeholder secrets; your real secrets.h never leaves your PC
+      - name: Create placeholder secrets.h
+        run: cp firmware/desk_controller/secrets.example.h firmware/desk_controller/secrets.h
+
+      - uses: arduino/compile-sketches@v1
+        with:
+          fqbn: esp32:esp32:esp32
+          platforms: |
+            - name: esp32:esp32
+              source-url: https://espressif.github.io/arduino-esp32/package_esp32_index.json
+          libraries: |
+            - name: TM1637
+          sketch-paths: |
+            - firmware/desk_controller
+          enable-warnings-report: true

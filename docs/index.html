@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Motorised L-desk — 3D preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --page:#dde2df; --floor:#cfd5d1; --ink:#1c2225; --muted:#56626a; --panel:rgba(246,248,247,.82);
+  --line:rgba(28,34,37,.14); --handset:#22292d; --key:#2f373c; --key-hi:#3c454b; --key-ink:#e8ecee;
+  --amber:#ffb000; --amber-dim:rgba(255,176,0,.10); --focus:#ffb000;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--page:#131719;--floor:#1a1f22;--ink:#e5e9eb;--muted:#8d979d;--panel:rgba(28,33,36,.82);--line:rgba(229,233,235,.13)}
+}
+:root[data-theme="dark"]{--page:#131719;--floor:#1a1f22;--ink:#e5e9eb;--muted:#8d979d;--panel:rgba(28,33,36,.82);--line:rgba(229,233,235,.13)}
+*{box-sizing:inherit}
+html,body{height:100%;margin:0}
+body{background:var(--page);color:var(--ink);font:15px/1.45 "Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;overflow:hidden}
+#stage{position:fixed;inset:0;touch-action:none;cursor:grab}
+#stage:active{cursor:grabbing}
+.title{position:fixed;left:24px;top:calc(20px + env(safe-area-inset-top,0px));max-width:min(420px,60vw);pointer-events:none}
+.title h1{font-size:30px;line-height:1.05;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
+.title p{margin:0;color:var(--muted);font-size:15px}
+.tools{position:fixed;right:20px;top:calc(20px + env(safe-area-inset-top,0px));display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;max-width:56vw}
+.tool{font:600 14px "Barlow",system-ui,sans-serif;color:var(--ink);background:var(--panel);border:1px solid var(--line);
+  border-radius:999px;padding:8px 14px;cursor:pointer;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.tool[aria-pressed="true"]{background:var(--ink);color:var(--page);border-color:var(--ink)}
+.tool:disabled{opacity:.45;cursor:default}
+.tool:focus-visible,.key:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.readout{position:fixed;left:24px;bottom:calc(24px + env(safe-area-inset-bottom,0px));width:260px;background:var(--panel);
+  border:1px solid var(--line);border-radius:16px;padding:14px 16px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.status{font-weight:600;font-size:16px;margin:0 0 10px;min-height:22px}
+.legrow{display:grid;grid-template-columns:62px 1fr 52px;align-items:center;gap:10px;font-size:13px;color:var(--muted);margin-top:6px}
+.legrow b{height:4px;border-radius:2px;background:var(--line);position:relative;overflow:hidden}
+.legrow b i{position:absolute;inset:0 auto 0 0;background:var(--ink);opacity:.7}
+.legrow span:last-child{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink)}
+.hint{font-size:12.5px;color:var(--muted);margin:12px 0 0;line-height:1.5}
+.handset{position:fixed;right:24px;bottom:calc(24px + env(safe-area-inset-bottom,0px));width:312px;background:var(--handset);
+  border-radius:24px;padding:16px;display:flex;flex-direction:column;gap:12px;
+  box-shadow:0 18px 40px rgba(10,14,16,.28),inset 0 1px 0 rgba(255,255,255,.06)}
+.lcd{background:#0b0e0f;border-radius:12px;padding:12px 14px 10px;display:flex;flex-direction:column;align-items:center;gap:4px}
+.lcd svg{width:100%;max-width:230px;height:auto;display:block}
+.lcd small{font-size:12px;color:#8c969c;min-height:16px}
+.keys{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.key{appearance:none;border:0;border-radius:14px;background:linear-gradient(var(--key-hi),var(--key));color:var(--key-ink);
+  font:600 20px "Barlow",system-ui,sans-serif;height:56px;cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none;
+  box-shadow:0 2px 0 #121618,inset 0 1px 0 rgba(255,255,255,.07)}
+.key.arrow{grid-column:span 2;height:64px}
+.key svg{width:26px;height:26px;vertical-align:middle}
+.key.held,.key:active{transform:translateY(2px);box-shadow:0 0 0 #121618;background:var(--key)}
+.key.lit{color:var(--amber)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.fail{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:24px;text-align:center;color:var(--muted)}
+@media (max-width:760px){
+  .title{left:16px;max-width:calc(100vw - 32px)}
+  .title h1{font-size:24px}
+  .title p{font-size:13.5px}
+  .tools{left:16px;right:16px;top:auto;bottom:calc(266px + env(safe-area-inset-bottom,0px));max-width:none;justify-content:flex-start;overflow-x:auto;flex-wrap:nowrap}
+  .tool{white-space:nowrap;padding:7px 12px;font-size:13px}
+  .readout{left:16px;right:16px;top:calc(124px + env(safe-area-inset-top,0px));bottom:auto;width:auto;padding:8px 12px;border-radius:12px}
+  .readout .hint,.legrow{display:none}
+  .status{font-size:14px;margin:0;min-height:0}
+  .handset{left:12px;right:12px;width:auto;bottom:calc(12px + env(safe-area-inset-bottom,0px));padding:12px;gap:10px}
+  .lcd{padding:8px 12px 6px}.lcd svg{max-width:150px}
+  .key{height:50px}.key.arrow{height:56px}
+}
+</style>
+</head>
+<body>
+<canvas id="stage" aria-label="3D model of the motorised L-shaped desk. Drag to rotate, scroll or pinch to zoom."></canvas>
+
+<header class="title">
+  <h1>Your L-desk, motorised</h1>
+  <p>1600 × 1400 mm top on three synchronised legs, 64.5 to 129 cm. Use the keypad exactly as you will on the real desk.</p>
+</header>
+
+<nav class="tools" aria-label="Preview controls">
+  <button class="tool" id="demo">Play demo</button>
+  <button class="tool" id="obstacle">Test anti-collision</button>
+  <button class="tool" id="fast" aria-pressed="false">4× speed</button>
+  <button class="tool" id="sound" aria-pressed="true">Sound</button>
+  <button class="tool" id="view">Reset view</button>
+</nav>
+
+<section class="readout" aria-live="polite">
+  <p class="status" id="status">Ready</p>
+  <div class="legrow"><span>Left</span><b><i id="b0"></i></b><span id="v0"></span></div>
+  <div class="legrow"><span>Corner</span><b><i id="b1"></i></b><span id="v1"></span></div>
+  <div class="legrow"><span>Return</span><b><i id="b2"></i></b><span id="v2"></span></div>
+  <p class="hint">Hold ▲ or ▼ to move. Tap 1, 2 or 3 to go to a preset. Press M then a number to save the current height. Hold M with ▼ for 3 seconds to reset. Keyboard: arrow keys, 1 2 3, M.</p>
+</section>
+
+<section class="handset" aria-label="Desk keypad">
+  <div class="lcd"><div id="seg" role="img" aria-label="Desk height"></div><small id="lcdnote">cm</small></div>
+  <div class="keys">
+    <button class="key arrow" id="kUp" aria-label="Hold to raise"><svg viewBox="0 0 24 24"><path d="M12 5l8 10H4z" fill="currentColor"/></svg></button>
+    <button class="key arrow" id="kDown" aria-label="Hold to lower"><svg viewBox="0 0 24 24"><path d="M12 19l8-10H4z" fill="currentColor"/></svg></button>
+    <button class="key" id="k1" aria-label="Preset 1">1</button>
+    <button class="key" id="k2" aria-label="Preset 2">2</button>
+    <button class="key" id="k3" aria-label="Preset 3">3</button>
+    <button class="key" id="kM" aria-label="Memory: then press 1, 2 or 3 to save">M</button>
+  </div>
+</section>
+<div class="fail" id="fail">The 3D view needs WebGL and could not start in this browser. The keypad logic is still described in your build guide.</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+'use strict';
+const $ = id => document.getElementById(id);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ------------------------------------------------------------ desk logic
+   Mirrors the ESP32 firmware: soft start/stop, 25 mm slow zone, presets,
+   M-then-number saving, reset by holding M + down, collision stop + back-off. */
+const MIN = 645, MAX = 1290, CRUISE = 35;           // mm, mm/s
+const sim = { h: 730, off: [0, 0, 0], mode: 'idle', dir: 0, target: 0, v: 0, stopping: false,
+  deadman: 0, msg: null, msgUntil: 0, saveArmed: false, saveUntil: 0, pending: null, pendingAt: 0, homed: true };
+const presets = [730, 1100, 920];
+const bias = [0.012, -0.008, 0.02];                 // the legs aren't identical: sync corrects this
+let speedMul = 1, sound = true, obstacleOn = false, obstacleY = 0;
+const OBST_TOP = 880;                              // mm: top of the cabinet + box used in the test
+let now = 0;
+
+function say(t){ $('status').textContent = t; }
+function msg(text, ms){ sim.msg = text; sim.msgUntil = now + ms; }
+
+let actx = null;
+function beep(n = 1, len = 0.05){
+  if(!sound) return;
+  try{
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    for(let i = 0; i < n; i++){
+      const o = actx.createOscillator(), g = actx.createGain(), t = actx.currentTime + i * (len + 0.07);
+      o.frequency.value = 2300; o.type = 'square'; g.gain.setValueAtTime(0.04, t); g.gain.setValueAtTime(0, t + len);
+      o.connect(g).connect(actx.destination); o.start(t); o.stop(t + len + 0.01);
+    }
+  }catch(e){}
+}
+
+function startMove(dir, mode, target){
+  if(sim.mode !== 'idle'){
+    if(sim.dir === dir){ sim.mode = mode; sim.target = target; sim.stopping = false; return true; }
+    sim.stopping = true; return false;
+  }
+  Object.assign(sim, { dir, mode, target, stopping: false, v: 0 });
+  return true;
+}
+function stop(){ if(sim.mode !== 'idle') sim.stopping = true; sim.pending = null; }
+function gotoMM(mm){
+  if(!sim.homed || sim.mode === 'homing'){ beep(1, 0.3); return; }
+  mm = Math.min(MAX, Math.max(MIN, mm));
+  if(Math.abs(mm - sim.h) < 2) return;
+  const d = mm > sim.h ? 1 : -1;
+  if(sim.mode !== 'idle' && sim.dir !== d){ sim.pending = mm; sim.pendingAt = 0; sim.stopping = true; return; }
+  startMove(d, 'goto', mm);
+  say(`Moving to ${(mm / 10).toFixed(1)} cm`);
+}
+function manual(d){
+  if(sim.mode === 'homing') return;
+  sim.deadman = now + 0.12;
+  sim.pending = null;
+  if(sim.mode === 'idle' || sim.dir === d){ startMove(d, 'manual', 0); say(d > 0 ? 'Raising' : 'Lowering'); }
+  else sim.stopping = true;
+}
+function endMotion(){
+  sim.mode = 'idle'; sim.v = 0; sim.stopping = false;
+  if(sim.pending !== null && now >= sim.pendingAt){ const t = sim.pending; sim.pending = null; gotoMM(t); return; }
+  if(!sim.msg || now > sim.msgUntil) say(`Stopped at ${(sim.h / 10).toFixed(1)} cm`);
+}
+function onObstacle(){
+  const d = sim.dir;
+  sim.mode = 'idle'; sim.v = 0; sim.stopping = false;
+  beep(3, 0.07); msg('StOP', 1.6);
+  say('Obstacle detected. Reversing 2 cm');
+  sim.pending = sim.h - d * 20; sim.pendingAt = now + 0.3;
+}
+
+function physics(dt){
+  if(sim.mode === 'idle'){
+    if(sim.pending !== null && now >= sim.pendingAt){ const t = sim.pending; sim.pending = null; gotoMM(t); }
+    sim.off = sim.off.map(o => o * Math.exp(-dt * 6));
+    return;
+  }
+  const accel = CRUISE / 0.65, decel = CRUISE / 0.16;
+  let vT = sim.mode === 'homing' ? CRUISE * 0.6 : CRUISE;
+  if(!sim.stopping){
+    if(sim.mode === 'manual' && now > sim.deadman) sim.stopping = true;
+    if(sim.mode !== 'homing'){
+      const room = sim.dir > 0 ? MAX - sim.h : sim.h - MIN;
+      if(room <= 0.5) sim.stopping = true;
+      else if(room < 25) vT = Math.min(vT, 8 + (CRUISE - 8) * room / 25);
+    }
+    if(sim.mode === 'goto'){
+      const rem = (sim.target - sim.h) * sim.dir;
+      if(rem <= 0.2){ sim.h = sim.target; endMotion(); return; }
+      if(rem < 25) vT = Math.min(vT, 6 + (CRUISE - 6) * rem / 25);
+    }
+  }
+  if(sim.stopping) vT = 0;
+  sim.v = sim.v < vT ? Math.min(vT, sim.v + accel * dt) : Math.max(vT, sim.v - decel * dt);
+  let dh = sim.dir * sim.v * dt;
+  if(sim.mode === 'goto'){ const rem = (sim.target - sim.h); if(Math.abs(dh) > Math.abs(rem)) dh = rem; }
+  sim.h += dh;
+  for(let i = 0; i < 3; i++) sim.off[i] += bias[i] * dh - sim.off[i] * Math.min(1, dt * 8);   // per-leg drift vs. sync
+  if(sim.mode === 'homing' && sim.h <= MIN){ sim.h = MIN; sim.homed = true; sim.off = [0, 0, 0]; beep(2, 0.12); say('Reset complete'); endMotion(); return; }
+  sim.h = Math.min(MAX, Math.max(MIN, sim.h));
+  if(obstacleOn && obstacleY > 0.99 && sim.dir < 0 && sim.h - 25 <= OBST_TOP){ sim.h = OBST_TOP + 25; onObstacle(); return; }
+  if(sim.stopping && sim.v === 0) endMotion();
+}
+
+/* ------------------------------------------------------------ keypad */
+const btn = { up:{el:$('kUp')}, down:{el:$('kDown')}, p1:{el:$('k1')}, p2:{el:$('k2')}, p3:{el:$('k3')}, m:{el:$('kM')} };
+for(const k in btn) Object.assign(btn[k], { held:false, at:0, consumed:false });
+function press(k){
+  const b = btn[k]; if(b.held) return;
+  b.held = true; b.at = now; b.el.classList.add('held');
+  if(sim.mode === 'goto' || sim.mode === 'homing'){ stop(); b.consumed = true; beep(1); say('Stopped'); return; }
+  beep(1, 0.02);
+  if(k[0] === 'p'){
+    const n = +k[1] - 1;
+    if(sim.saveArmed && now < sim.saveUntil){
+      presets[n] = Math.round(sim.h); sim.saveArmed = false; btn.m.el.classList.remove('lit');
+      msg('S- ' + (n + 1), 1.2); beep(2); say(`Saved ${(sim.h / 10).toFixed(1)} cm as preset ${n + 1}`); updateKeyLabels();
+    } else gotoMM(presets[n]);
+  }
+  if(k === 'm'){ sim.saveArmed = true; sim.saveUntil = now + 5; btn.m.el.classList.add('lit'); msg('S-  ', 5); say('Press 1, 2 or 3 to save this height'); }
+}
+function release(k){
+  const b = btn[k]; if(!b.held) return;
+  b.held = false; b.consumed = false; b.el.classList.remove('held');
+  if((k === 'up' || k === 'down') && sim.mode === 'manual') sim.stopping = true;
+}
+function keypadTick(){
+  if(btn.m.held){
+    if(btn.down.held && sim.mode === 'idle' && now - btn.down.at > 3 && now - btn.m.at > 3){
+      sim.saveArmed = false; sim.msg = null; btn.m.el.classList.remove('lit');
+      sim.homed = false; startMove(-1, 'homing', MIN); beep(2); say('Resetting: finding the bottom stop'); btn.down.consumed = true;
+    }
+    return;
+  }
+  if(btn.up.held && !btn.down.held && !btn.up.consumed) manual(1);
+  if(btn.down.held && !btn.up.held && !btn.down.consumed) manual(-1);
+  if(sim.saveArmed && now > sim.saveUntil){ sim.saveArmed = false; btn.m.el.classList.remove('lit'); }
+}
+const keyMap = { up:'up', down:'down', p1:'p1', p2:'p2', p3:'p3', m:'m' };
+for(const k in keyMap){
+  const el = btn[k].el;
+  el.addEventListener('pointerdown', e => { e.preventDefault(); el.setPointerCapture(e.pointerId); stopDemo(); press(k); });
+  ['pointerup','pointercancel','lostpointercapture'].forEach(ev => el.addEventListener(ev, () => release(k)));
+  el.addEventListener('keydown', e => { if((e.key === ' ' || e.key === 'Enter') && !e.repeat){ e.preventDefault(); stopDemo(); press(k); } });
+  el.addEventListener('keyup', e => { if(e.key === ' ' || e.key === 'Enter') release(k); });
+  el.addEventListener('contextmenu', e => e.preventDefault());
+}
+const hotkeys = { ArrowUp:'up', ArrowDown:'down', '1':'p1', '2':'p2', '3':'p3', m:'m', M:'m' };
+addEventListener('keydown', e => { const k = hotkeys[e.key]; if(!k || e.repeat) return; e.preventDefault(); stopDemo(); press(k); });
+addEventListener('keyup', e => { const k = hotkeys[e.key]; if(k) release(k); });
+addEventListener('blur', () => { for(const k in btn) release(k); });
+function updateKeyLabels(){ presets.forEach((p, i) => btn['p' + (i + 1)].el.setAttribute('aria-label', `Preset ${i + 1}, ${(p / 10).toFixed(1)} cm`)); }
+updateKeyLabels();
+
+/* ------------------------------------------------------------ 7-segment display */
+const SEGS = {'0':'abcdef','1':'bc','2':'abdeg','3':'abcdg','4':'bcfg','5':'acdfg','6':'acdefg','7':'abc','8':'abcdefg','9':'abcdfg','-':'g',' ':'','E':'adefg','r':'eg','S':'acdfg','t':'defg','O':'abcdef','P':'abefg'};
+const Hs = (x1,x2,y)=>`${x1},${y} ${x1+4},${y-4} ${x2-4},${y-4} ${x2},${y} ${x2-4},${y+4} ${x1+4},${y+4}`;
+const Vs = (x,y1,y2)=>`${x},${y1} ${x+4},${y1+4} ${x+4},${y2-4} ${x},${y2} ${x-4},${y2-4} ${x-4},${y1+4}`;
+const SHAPE = {a:Hs(9,41,6),g:Hs(9,41,45),d:Hs(9,41,84),f:Vs(6,9,42),b:Vs(44,9,42),e:Vs(6,48,81),c:Vs(44,48,81)};
+let lastSeg = '';
+function seg7(text){
+  if(text === lastSeg) return; lastSeg = text;
+  const cells = []; for(const ch of text){ if(ch === '.' && cells.length) cells[cells.length-1].dot = true; else cells.push({ch, dot:false}); }
+  while(cells.length < 4) cells.unshift({ch:' ', dot:false});
+  let g = '';
+  cells.forEach((c, i) => { const on = SEGS[c.ch] || ''; g += `<g transform="translate(${i*60} 0) skewX(-6)">`;
+    for(const s in SHAPE) g += `<polygon points="${SHAPE[s]}" fill="${on.includes(s) ? 'var(--amber)' : 'var(--amber-dim)'}"/>`;
+    g += `<circle cx="53" cy="84" r="4" fill="${c.dot ? 'var(--amber)' : 'var(--amber-dim)'}"/></g>`; });
+  $('seg').innerHTML = `<svg viewBox="-6 -2 ${cells.length*60+4} 94" aria-hidden="true">${g}</svg>`;
+}
+const heightText = mm => { const s = String(Math.round(mm)); return s.slice(0, -1) + '.' + s.slice(-1); };
+
+/* ------------------------------------------------------------ 3D scene */
+if(!window.THREE){ $('fail').style.display = 'flex'; return; }
+const canvas = $('stage');
+let renderer;
+try{ renderer = new THREE.WebGLRenderer({ canvas, antialias: true }); }
+catch(e){ $('fail').style.display = 'flex'; return; }
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.9;
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(38, 1, 0.05, 50);
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0x7c827f, 0.55));
+const sun = new THREE.DirectionalLight(0xfff4e6, 1.15);
+sun.position.set(-2.2, 4.2, 2.6); sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, { left: -2.4, right: 2.4, top: 2.4, bottom: -2.4, near: 0.5, far: 12 });
+sun.shadow.bias = -0.0004; sun.shadow.radius = 4;
+scene.add(sun);
+const fill = new THREE.DirectionalLight(0xdfe8ff, 0.35); fill.position.set(3, 2, -2); scene.add(fill);
+
+const floorMat = new THREE.MeshStandardMaterial({ roughness: 0.95 });
+const floor = new THREE.Mesh(new THREE.CircleGeometry(30, 64), floorMat);
+floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
+
+function applyTheme(){
+  const bg = new THREE.Color(css('--page')), fl = new THREE.Color(css('--floor'));
+  scene.background = bg; scene.fog = new THREE.Fog(bg, 6, 13); floorMat.color = fl;
+}
+applyTheme();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
+
+// materials
+function woodTexture(){
+  const c = document.createElement('canvas'); c.width = 1024; c.height = 256;
+  const g = c.getContext('2d');
+  g.fillStyle = '#8d5c3a'; g.fillRect(0, 0, 1024, 256);
+  for(let i = 0; i < 140; i++){
+    const y = (i * 37.3) % 256, w = 0.6 + (i % 5) * 0.5;
+    g.strokeStyle = `rgba(${60 + (i % 3) * 12},${34 + (i % 4) * 6},${18},${0.10 + (i % 4) * 0.04})`;
+    g.lineWidth = w; g.beginPath(); g.moveTo(0, y);
+    for(let x = 0; x <= 1024; x += 64) g.lineTo(x, y + Math.sin((x + i * 13) / 90) * 5);
+    g.stroke();
+  }
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.encoding = THREE.sRGBEncoding; t.anisotropy = 4;
+  return t;
+}
+const wood = woodTexture();
+const mTop = new THREE.MeshStandardMaterial({ map: wood, roughness: 0.55, metalness: 0.0 });
+const mEdge = new THREE.MeshStandardMaterial({ color: 0x5e3b24, roughness: 0.6 });
+const mFrame = new THREE.MeshStandardMaterial({ color: 0x272c30, roughness: 0.5, metalness: 0.35 });
+const mStage = [0x2b3034, 0x353b40, 0x3f464b].map(c => new THREE.MeshStandardMaterial({ color: c, roughness: 0.42, metalness: 0.45 }));
+const mDark = new THREE.MeshStandardMaterial({ color: 0x1d2124, roughness: 0.6 });
+const mScreen = new THREE.MeshStandardMaterial({ color: 0x18242c, emissive: 0x2a4150, emissiveIntensity: 0.18, roughness: 0.25 });
+const mLight = new THREE.MeshStandardMaterial({ color: 0xd9dcda, roughness: 0.7 });
+const mFabric = new THREE.MeshStandardMaterial({ color: 0x454c52, roughness: 0.9 });
+const mCard = new THREE.MeshStandardMaterial({ color: 0xb98e5c, roughness: 0.9 });
+const mCab = new THREE.MeshStandardMaterial({ color: 0xc9cdca, roughness: 0.6, metalness: 0.1 });
+const mAmber = new THREE.MeshStandardMaterial({ color: 0xffb000, emissive: 0xffb000, emissiveIntensity: 1.2 });
+const mLeaf = new THREE.MeshStandardMaterial({ color: 0x4f7a4a, roughness: 0.8 });
+
+function box(w, h, d, mat, x, y, z, parent){
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  m.position.set(x, y, z); m.castShadow = true; m.receiveShadow = true; parent.add(m); return m;
+}
+function cyl(rt, rb, h, mat, x, y, z, parent, seg = 24){
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg), mat);
+  m.position.set(x, y, z); m.castShadow = true; m.receiveShadow = true; parent.add(m); return m;
+}
+
+// desk coordinates: origin = back-left corner of main top, x right, z towards the user (metres)
+const desk = new THREE.Group(); desk.position.set(-0.8, 0, -0.7); scene.add(desk);
+const upper = new THREE.Group(); desk.add(upper);   // everything that rises; y=0 is the desktop surface
+const legsXZ = [[0.15, 0.35], [1.25, 0.35], [1.25, 1.25]];
+
+// desktop (two pieces, as built)
+const T = 0.025;
+const main = box(1.6, T, 0.7, mTop, 0.8, -T / 2, 0.35, upper);
+const ret = box(0.7, T, 0.7, mTop, 1.25, -T / 2, 1.05, upper);
+main.material = mTop; ret.material = mTop;
+// edge band strips on the user-facing edges
+box(0.9, T + 0.001, 0.004, mEdge, 0.45, -T / 2, 0.702, upper);
+box(0.004, T + 0.001, 0.7, mEdge, 0.898, -T / 2, 1.05, upper);
+box(0.7, T + 0.001, 0.004, mEdge, 1.25, -T / 2, 1.402, upper);
+
+// frame under the top: plates + beams
+legsXZ.forEach(([x, z]) => box(0.14, 0.005, 0.14, mFrame, x, -T - 0.0025, z, upper));
+box(1.1, 0.03, 0.06, mFrame, 0.7, -T - 0.005 - 0.015, 0.35, upper);       // beam A-B
+box(0.06, 0.03, 0.9, mFrame, 1.25, -T - 0.005 - 0.015, 0.8, upper);       // beam B-C
+// keypad under the front edge
+const pad = new THREE.Group(); pad.position.set(0.72, -T - 0.012, 0.69); upper.add(pad);
+box(0.16, 0.02, 0.05, mDark, 0, 0, 0, pad);
+box(0.045, 0.012, 0.004, mAmber, -0.045, 0, 0.026, pad);
+// cable tray
+box(0.7, 0.06, 0.12, mFrame, 0.55, -T - 0.07, 0.12, upper);
+
+// things on the desk
+function monitor(x, z, rotY){
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rotY; upper.add(g);
+  box(0.22, 0.012, 0.16, mDark, 0, 0.006, 0, g);
+  box(0.04, 0.32, 0.03, mDark, 0, 0.17, -0.03, g);
+  box(0.62, 0.36, 0.03, mDark, 0, 0.42, -0.005, g);
+  box(0.6, 0.34, 0.002, mScreen, 0, 0.42, 0.012, g);
+}
+monitor(0.45, 0.22, 0.12);
+monitor(1.08, 0.24, -0.28);
+box(0.44, 0.02, 0.14, mLight, 0.62, 0.01, 0.5, upper);                      // keyboard
+box(0.07, 0.012, 0.11, mLight, 0.94, 0.006, 0.52, upper);                   // mouse
+const lap = new THREE.Group(); lap.position.set(1.32, 0, 1.0); lap.rotation.y = -0.5; upper.add(lap);
+box(0.32, 0.012, 0.22, mCab, 0, 0.006, 0, lap);
+const lid = box(0.32, 0.21, 0.008, mCab, 0, 0.11, -0.11, lap); lid.rotation.x = -0.25;
+cyl(0.04, 0.035, 0.1, mLight, 0.2, 0.05, 0.55, upper);                      // mug
+cyl(0.06, 0.05, 0.1, mCard, 1.48, 0.05, 0.2, upper);                        // plant pot
+const leaves = new THREE.Mesh(new THREE.SphereGeometry(0.11, 16, 12), mLeaf); leaves.position.set(1.48, 0.17, 0.2); leaves.castShadow = true; upper.add(leaves);
+
+// columns and feet (static base + telescoping stages)
+const stageDims = [[0.085, 0.06], [0.074, 0.05], [0.063, 0.04]];
+const STAGE_LEN = 0.56, FOOT_H = 0.035;
+const columns = legsXZ.map(([x, z], i) => {
+  const along = i === 2 ? 'x' : 'z';
+  box(along === 'x' ? 0.68 : 0.07, FOOT_H, along === 'x' ? 0.07 : 0.68, mFrame, x, FOOT_H / 2, z, desk);
+  return stageDims.map(([w, d], s) => box(w, STAGE_LEN, d, mStage[s], x, 0, z, desk));
+});
+
+// chair (static, so you can see sit vs. stand)
+const chair = new THREE.Group(); chair.position.set(0.36, 0, 1.22); chair.rotation.y = 0.25; desk.add(chair);
+for(let i = 0; i < 5; i++){
+  const a = i / 5 * Math.PI * 2;
+  const spoke = box(0.3, 0.025, 0.04, mDark, Math.cos(a) * 0.15, 0.06, Math.sin(a) * 0.15, chair); spoke.rotation.y = -a;
+  cyl(0.025, 0.025, 0.04, mDark, Math.cos(a) * 0.29, 0.02, Math.sin(a) * 0.29, chair, 12);
+}
+cyl(0.025, 0.03, 0.38, mFrame, 0, 0.26, 0, chair);
+box(0.5, 0.07, 0.48, mFabric, 0, 0.48, 0, chair);
+const back = box(0.46, 0.56, 0.06, mFabric, 0, 0.82, 0.25, chair); back.rotation.x = 0.12;
+
+// obstacle for the anti-collision test: low cabinet + a box under the return
+const obstacle = new THREE.Group(); desk.add(obstacle);
+box(0.24, 0.62, 0.42, mCab, 1.05, 0.31, 1.0, obstacle);
+box(0.22, 0.26, 0.3, mCard, 1.05, 0.62 + 0.13, 1.0, obstacle);
+obstacle.visible = false;
+
+/* ------------------------------------------------------------ camera orbit */
+const view = { theta: -0.62, phi: 1.12, r: 4.0, target: new THREE.Vector3(0, 0.74, 0) };
+const home = { ...view };
+function placeCamera(){
+  view.phi = Math.min(1.5, Math.max(0.35, view.phi));
+  view.r = Math.min(7, Math.max(1.6, view.r));
+  const sp = Math.sin(view.phi);
+  camera.position.set(view.target.x + view.r * sp * Math.sin(view.theta), view.target.y + view.r * Math.cos(view.phi), view.target.z + view.r * sp * Math.cos(view.theta));
+  camera.lookAt(view.target);
+}
+const pointers = new Map(); let pinch0 = 0, r0 = 0;
+canvas.addEventListener('pointerdown', e => { canvas.setPointerCapture(e.pointerId); pointers.set(e.pointerId, { x: e.clientX, y: e.clientY }); stopDemoOrbit();
+  if(pointers.size === 2){ const [a, b] = [...pointers.values()]; pinch0 = Math.hypot(a.x - b.x, a.y - b.y); r0 = view.r; } });
+canvas.addEventListener('pointermove', e => {
+  const p = pointers.get(e.pointerId); if(!p) return;
+  if(pointers.size === 1){ view.theta -= (e.clientX - p.x) * 0.006; view.phi -= (e.clientY - p.y) * 0.006; }
+  p.x = e.clientX; p.y = e.clientY;
+  if(pointers.size === 2){ const [a, b] = [...pointers.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y); if(pinch0) view.r = r0 * pinch0 / d; }
+});
+['pointerup', 'pointercancel'].forEach(ev => canvas.addEventListener(ev, e => { pointers.delete(e.pointerId); pinch0 = 0; }));
+canvas.addEventListener('wheel', e => { e.preventDefault(); view.r *= Math.exp(e.deltaY * 0.001); }, { passive: false });
+$('view').addEventListener('click', () => Object.assign(view, { ...home, target: home.target.clone() }));
+
+function resize(){
+  const w = innerWidth, h = innerHeight;
+  renderer.setSize(w, h, false); camera.aspect = w / h;
+  camera.fov = w < 760 ? 50 : 38;
+  if(w < 760){ home.r = 5.6; home.target = new THREE.Vector3(0.05, 0.5, 0.1); }
+  camera.updateProjectionMatrix();
+}
+addEventListener('resize', resize); resize();
+Object.assign(view, { ...home, target: home.target.clone() });
+
+/* ------------------------------------------------------------ preview tools */
+let demoRun = 0, orbitting = false;
+const wait = s => new Promise(r => setTimeout(r, s * 1000 / Math.max(1, speedMul * 0.6)));
+const idle = () => new Promise(r => { const t = setInterval(() => { if(sim.mode === 'idle' && sim.pending === null){ clearInterval(t); r(); } }, 100); });
+function stopDemo(){ demoRun++; orbitting = false; $('demo').textContent = 'Play demo'; }
+function stopDemoOrbit(){ orbitting = false; }
+async function tap(k){ press(k); await wait(0.15); release(k); }
+$('demo').addEventListener('click', async () => {
+  if($('demo').textContent === 'Stop demo'){ stopDemo(); stop(); return; }
+  const run = ++demoRun; orbitting = !reduceMotion; $('demo').textContent = 'Stop demo';
+  const steps = [['p2', 'Preset 2: standing'], ['p3', 'Preset 3: perch'], ['p1', 'Preset 1: sitting']];
+  for(const [k, label] of steps){
+    if(run !== demoRun) return;
+    await tap(k); say(label + `, ${(presets[+k[1] - 1] / 10).toFixed(1)} cm`);
+    await idle(); if(run !== demoRun) return; await wait(1.6);
+  }
+  if(run === demoRun){ stopDemo(); say('Demo finished. Try the keypad'); }
+});
+$('obstacle').addEventListener('click', async () => {
+  stopDemo(); const b = $('obstacle'); b.disabled = true;
+  if(sim.h < 1000){ gotoMM(1150); say('Raising before the test'); await idle(); }
+  obstacleOn = true; obstacle.visible = true; say('A cabinet with a box is now under the return');
+  await new Promise(r => { const t = setInterval(() => { if(obstacleY >= 1){ clearInterval(t); r(); } }, 50); });
+  await wait(0.6); await tap('p1'); say('Lowering to preset 1 with the obstacle in the way');
+  await idle(); await wait(2.5);
+  obstacleOn = false; say('Obstacle removed. Lower again to continue');
+  await new Promise(r => { const t = setInterval(() => { if(obstacleY <= 0){ clearInterval(t); r(); } }, 50); });
+  obstacle.visible = false; b.disabled = false;
+});
+$('fast').addEventListener('click', e => { speedMul = speedMul === 1 ? 4 : 1; e.currentTarget.setAttribute('aria-pressed', speedMul > 1); });
+$('sound').addEventListener('click', e => { sound = !sound; e.currentTarget.setAttribute('aria-pressed', sound); });
+
+/* ------------------------------------------------------------ frame loop */
+let last = performance.now();
+function frame(t){
+  const real = Math.min(0.05, (t - last) / 1000); last = t;
+  now += real;
+  keypadTick();
+  const dt = real * speedMul;
+  physics(dt);
+
+  // obstacle slides in from the front
+  obstacleY += (obstacleOn ? 1 : -1) * real * 1.4; obstacleY = Math.min(1, Math.max(0, obstacleY));
+  obstacle.position.z = (1 - obstacleY) * 1.6;
+
+  // geometry follows the simulation
+  const hTop = sim.h / 1000;
+  upper.position.y = hTop;
+  const colTopMin = MIN / 1000 - 0.03;
+  for(let i = 0; i < 3; i++){
+    const colTop = hTop + sim.off[i] / 1000 - 0.03;
+    const ext = colTop - colTopMin;
+    const tops = [FOOT_H + STAGE_LEN, colTopMin - 0.01 + ext / 2, colTop];
+    columns[i].forEach((m, s) => { m.position.y = tops[s] - STAGE_LEN / 2; });
+  }
+
+  // readouts
+  const legs = sim.off.map(o => sim.h + o);
+  legs.forEach((mm, i) => { $('v' + i).textContent = (mm / 10).toFixed(1); $('b' + i).style.width = ((mm - MIN) / (MAX - MIN) * 100).toFixed(1) + '%'; });
+  let text;
+  if(sim.msg && now < sim.msgUntil) text = sim.msg;
+  else if(sim.mode === 'homing') text = 'rSt ';
+  else text = heightText(sim.h);
+  seg7(text);
+  $('lcdnote').textContent = sim.saveArmed ? 'Press 1, 2 or 3' : 'cm';
+  $('seg').setAttribute('aria-label', `Desk height ${(sim.h / 10).toFixed(1)} centimetres`);
+
+  if(orbitting) view.theta += real * 0.12;
+  placeCamera();
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+say('Ready. Hold ▲ to raise the desk');
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

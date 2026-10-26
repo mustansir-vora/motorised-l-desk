@@ -1,0 +1,25 @@
+group,item,qty,spec,where,est_inr_each,status,actual_inr,notes
+Motion,Lifting column,3,"3-stage, 24 V DC, Hall sensors, 650 mm stroke, 800 N+, internal limit switches; same model x3","Ergologic (Parel) spare legs / Alibaba (Jiecang JS36DS5-3-S, Kuangshan JC35ER-3, TiMOTION TL4S class)",6000-12000,to buy,,"Get wiring diagram, Hall voltage, output type, pulses/mm before paying"
+Frame,Crossbeams,1,"MS rect tube 60x30x2 mm, ~2.2 m",Fabricator / Lohar Chawl,1500,to buy,,
+Frame,Feet,3,"MS tube 60x30x2 mm, 680 mm, end caps, 2x M8 nuts",Fabricator,300,to buy,,
+Frame,Leg top brackets,3,"5 mm MS plate 140x140, drilled to column pattern",Fabricator,400,to buy,,
+Frame,Fabrication + powder coat,1,"Weld beams to brackets, matt graphite or white",Local fabricator,3000-5000,to buy,,
+Top,Desktop board,1,"25 mm block board / BWR ply, 8x4 ft; cut 1600x700 + 700x700",Plywood dealer / IndiaMART,5300,to buy,,
+Top,Laminate,1,"1 mm top + 0.8 mm balancer",Laminate dealer,2000-3000,to buy,,
+Top,Edge band,7,"2 mm PVC, metres",Laminate dealer,45,to buy,,
+Top,Dowels + mending plates,1,"8 mm dowels, 2x 3 mm steel plates for the seam",Hardware store,200,to buy,,
+Hardware,Fasteners,1,"M6x16 + M6 threaded inserts, M8 bolts, 6x M8 levelling glides",Lohar Chawl,800,to buy,,
+Hardware,Cable tray + spine,1,"600-800 mm tray, flexible vertical spine",Amazon / office supplier,1500,to buy,,
+Electronics,ESP32 DevKit V1,1,"WROOM-32, 38-pin",G D Components (Lamington Rd),350,to buy,,
+Electronics,BTS7960 H-bridge,3,"IBT-2, 6-27 V, 43 A",Lamington Rd / Thingbits / Hubtronics,251-443,to buy,,
+Electronics,24 V PSU,1,"Mean Well LRS-350-24 (14.6 A)",Authorised dealer / Probots,1900,to buy,,Buy genuine; fanless LRS-200-24 if columns draw <= 2.5 A
+Electronics,Buck converter,1,"LM2596 / XL4015, 24 -> 5 V, 3 A",Lamington Rd,120,to buy,,Set to 5.0 V before connecting ESP32
+Electronics,TM1637 display,1,"4-digit 0.56 in, red/amber",Lamington Rd,100,to buy,,
+Electronics,Push buttons,6,"12 mm momentary, caps up/down/1/2/3/M",Lamington Rd,40,to buy,,
+Electronics,Buzzer set,1,"Active 5 V buzzer + BC547 + 1k",Lamington Rd,30,to buy,,
+Electronics,Resistors,1,"10k x5, 4.7k x3, 20k x3",Lamington Rd,50,to buy,,
+Electronics,Capacitor,1,"1000 uF 35 V",Lamington Rd,40,to buy,,
+Electronics,Fuses,1,"15 A blade + holder; IEC inlet with switch + 3 A fuse",Lamington Rd,300,to buy,,
+Electronics,Leg connectors,3,"GX16 6-pin aviation pairs",Lamington Rd,100,to buy,,
+Electronics,Enclosures,2,"ABS ~200x120x75 controller box; slim keypad box",Lamington Rd,300,to buy,,
+Electronics,Wire,1,"18 AWG motor, 8-core 24 AWG signal",Lamington Rd,500,to buy,,
