@@ -20,15 +20,18 @@
 :root[data-theme="dark"]{--page:#131719;--floor:#1a1f22;--ink:#e5e9eb;--muted:#8d979d;--panel:rgba(28,33,36,.82);--line:rgba(229,233,235,.13)}
 *{box-sizing:inherit}
 html,body{height:100%;margin:0}
-body{background:var(--page);color:var(--ink);font:15px/1.45 "Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;overflow:hidden}
-#stage{position:fixed;inset:0;touch-action:none;cursor:grab}
+body{background:var(--page);color:var(--ink);font:15px/1.45 "Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;overflow:hidden;
+  -webkit-text-size-adjust:100%;overscroll-behavior:none;-webkit-touch-callout:none}
+/* a canvas is a replaced element: inset:0 alone does not stretch it, so give it an explicit CSS size */
+#stage{position:fixed;left:0;top:0;width:100%;height:100vh;height:100dvh;display:block;touch-action:none;cursor:grab}
 #stage:active{cursor:grabbing}
 .title{position:fixed;left:24px;top:calc(20px + env(safe-area-inset-top,0px));max-width:min(420px,60vw);pointer-events:none}
 .title h1{font-size:30px;line-height:1.05;font-weight:700;letter-spacing:-.02em;margin:0 0 6px}
 .title p{margin:0;color:var(--muted);font-size:15px}
 .tools{position:fixed;right:20px;top:calc(20px + env(safe-area-inset-top,0px));display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;max-width:56vw}
 .tool{font:600 14px "Barlow",system-ui,sans-serif;color:var(--ink);background:var(--panel);border:1px solid var(--line);
-  border-radius:999px;padding:8px 14px;cursor:pointer;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+  border-radius:999px;padding:8px 14px;cursor:pointer;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 .tool[aria-pressed="true"]{background:var(--ink);color:var(--page);border-color:var(--ink)}
 .tool:disabled{opacity:.45;cursor:default}
 .tool:focus-visible,.key:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
@@ -49,6 +52,7 @@ body{background:var(--page);color:var(--ink);font:15px/1.45 "Barlow",system-ui,-
 .keys{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .key{appearance:none;border:0;border-radius:14px;background:linear-gradient(var(--key-hi),var(--key));color:var(--key-ink);
   font:600 20px "Barlow",system-ui,sans-serif;height:56px;cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none;
+  -webkit-tap-highlight-color:transparent;
   box-shadow:0 2px 0 #121618,inset 0 1px 0 rgba(255,255,255,.07)}
 .key.arrow{grid-column:span 2;height:64px}
 .key svg{width:26px;height:26px;vertical-align:middle}
@@ -56,18 +60,34 @@ body{background:var(--page);color:var(--ink);font:15px/1.45 "Barlow",system-ui,-
 .key.lit{color:var(--amber)}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 .fail{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:24px;text-align:center;color:var(--muted)}
+/* phones, portrait. --th / --hs are the title and keypad heights, measured in JS so nothing overlaps */
 @media (max-width:760px){
   .title{left:16px;max-width:calc(100vw - 32px)}
   .title h1{font-size:24px}
   .title p{font-size:13.5px}
-  .tools{left:16px;right:16px;top:auto;bottom:calc(266px + env(safe-area-inset-bottom,0px));max-width:none;justify-content:flex-start;overflow-x:auto;flex-wrap:nowrap}
+  .tools{left:16px;right:16px;top:auto;bottom:calc(var(--hs,244px) + 24px + env(safe-area-inset-bottom,0px));max-width:none;justify-content:flex-start;flex-wrap:wrap;gap:6px}
   .tool{white-space:nowrap;padding:7px 12px;font-size:13px}
-  .readout{left:16px;right:16px;top:calc(124px + env(safe-area-inset-top,0px));bottom:auto;width:auto;padding:8px 12px;border-radius:12px}
+  .readout{left:16px;right:16px;top:calc(var(--th,72px) + 28px + env(safe-area-inset-top,0px));bottom:auto;width:auto;padding:8px 12px;border-radius:12px;pointer-events:none}
   .readout .hint,.legrow{display:none}
   .status{font-size:14px;margin:0;min-height:0}
   .handset{left:12px;right:12px;width:auto;bottom:calc(12px + env(safe-area-inset-bottom,0px));padding:12px;gap:10px}
   .lcd{padding:8px 12px 6px}.lcd svg{max-width:150px}
   .key{height:50px}.key.arrow{height:56px}
+}
+/* phones, landscape: wide but very short, so shrink the panels and keep the desk in the middle */
+@media (max-height:520px) and (min-width:761px){
+  .title{left:16px;top:calc(12px + env(safe-area-inset-top,0px));max-width:30vw}
+  .title h1{font-size:20px;margin:0}
+  .title p{display:none}
+  .tools{top:calc(10px + env(safe-area-inset-top,0px));right:16px;max-width:62vw;gap:6px}
+  .tool{padding:6px 11px;font-size:13px}
+  .readout{left:16px;bottom:calc(12px + env(safe-area-inset-bottom,0px));width:200px;padding:10px 12px;border-radius:12px;pointer-events:none}
+  .readout .hint,.legrow{display:none}
+  .status{font-size:14px;margin:0;min-height:0}
+  .handset{right:calc(16px + env(safe-area-inset-right,0px));bottom:calc(12px + env(safe-area-inset-bottom,0px));width:236px;padding:10px;gap:8px;border-radius:20px}
+  .lcd{padding:6px 10px 4px}.lcd svg{max-width:130px}
+  .keys{gap:6px}
+  .key{height:40px;font-size:18px}.key.arrow{height:44px}
 }
 </style>
 </head>
@@ -136,6 +156,7 @@ function beep(n = 1, len = 0.05){
   if(!sound) return;
   try{
     actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    if(actx.state === 'suspended') actx.resume();            // iOS starts audio suspended until a tap
     for(let i = 0; i < n; i++){
       const o = actx.createOscillator(), g = actx.createGain(), t = actx.currentTime + i * (len + 0.07);
       o.frequency.value = 2300; o.type = 'square'; g.gain.setValueAtTime(0.04, t); g.gain.setValueAtTime(0, t + len);
@@ -262,6 +283,7 @@ const hotkeys = { ArrowUp:'up', ArrowDown:'down', '1':'p1', '2':'p2', '3':'p3', 
 addEventListener('keydown', e => { const k = hotkeys[e.key]; if(!k || e.repeat) return; e.preventDefault(); stopDemo(); press(k); });
 addEventListener('keyup', e => { const k = hotkeys[e.key]; if(k) release(k); });
 addEventListener('blur', () => { for(const k in btn) release(k); });
+document.addEventListener('visibilitychange', () => { if(document.hidden) for(const k in btn) release(k); });
 function updateKeyLabels(){ presets.forEach((p, i) => btn['p' + (i + 1)].el.setAttribute('aria-label', `Preset ${i + 1}, ${(p / 10).toFixed(1)} cm`)); }
 updateKeyLabels();
 
@@ -286,11 +308,17 @@ const heightText = mm => { const s = String(Math.round(mm)); return s.slice(0, -
 /* ------------------------------------------------------------ 3D scene */
 if(!window.THREE){ $('fail').style.display = 'flex'; return; }
 const canvas = $('stage');
+// phones and tablets get a cheaper render: capped pixel ratio, smaller shadow map, cheaper shadow filter
+const lowPower = matchMedia('(pointer: coarse)').matches || Math.min(screen.width, screen.height) < 600;
+const pixelRatio = Math.min(devicePixelRatio || 1, lowPower ? 1.5 : 2);
 let renderer;
-try{ renderer = new THREE.WebGLRenderer({ canvas, antialias: true }); }
+try{ renderer = new THREE.WebGLRenderer({ canvas, antialias: pixelRatio < 2, powerPreference: 'high-performance' }); }
 catch(e){ $('fail').style.display = 'flex'; return; }
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.setPixelRatio(pixelRatio);
+let dirty = true;                                          // render only when something changed
+canvas.addEventListener('webglcontextlost', e => e.preventDefault());   // mobile browsers drop the context under memory pressure
+canvas.addEventListener('webglcontextrestored', () => { dirty = true; });
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = lowPower ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
 renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.9;
 
@@ -300,7 +328,7 @@ const camera = new THREE.PerspectiveCamera(38, 1, 0.05, 50);
 scene.add(new THREE.HemisphereLight(0xffffff, 0x7c827f, 0.55));
 const sun = new THREE.DirectionalLight(0xfff4e6, 1.15);
 sun.position.set(-2.2, 4.2, 2.6); sun.castShadow = true;
-sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.mapSize.set(lowPower ? 1024 : 2048, lowPower ? 1024 : 2048);
 Object.assign(sun.shadow.camera, { left: -2.4, right: 2.4, top: 2.4, bottom: -2.4, near: 0.5, far: 12 });
 sun.shadow.bias = -0.0004; sun.shadow.radius = 4;
 scene.add(sun);
@@ -315,7 +343,8 @@ function applyTheme(){
   scene.background = bg; scene.fog = new THREE.Fog(bg, 6, 13); floorMat.color = fl;
 }
 applyTheme();
-matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
+{ const mq = matchMedia('(prefers-color-scheme: dark)'), onTheme = () => { applyTheme(); dirty = true; };
+  if(mq.addEventListener) mq.addEventListener('change', onTheme); else if(mq.addListener) mq.addListener(onTheme); }   // Safari < 14
 
 // materials
 function woodTexture(){
@@ -431,13 +460,13 @@ const view = { theta: -0.62, phi: 1.12, r: 4.0, target: new THREE.Vector3(0, 0.7
 const home = { ...view };
 function placeCamera(){
   view.phi = Math.min(1.5, Math.max(0.35, view.phi));
-  view.r = Math.min(7, Math.max(1.6, view.r));
+  view.r = Math.min(12, Math.max(1.6, view.r));
   const sp = Math.sin(view.phi);
   camera.position.set(view.target.x + view.r * sp * Math.sin(view.theta), view.target.y + view.r * Math.cos(view.phi), view.target.z + view.r * sp * Math.cos(view.theta));
   camera.lookAt(view.target);
 }
 const pointers = new Map(); let pinch0 = 0, r0 = 0;
-canvas.addEventListener('pointerdown', e => { canvas.setPointerCapture(e.pointerId); pointers.set(e.pointerId, { x: e.clientX, y: e.clientY }); stopDemoOrbit();
+canvas.addEventListener('pointerdown', e => { canvas.setPointerCapture(e.pointerId); pointers.set(e.pointerId, { x: e.clientX, y: e.clientY }); stopDemoOrbit(); userMoved = true;
   if(pointers.size === 2){ const [a, b] = [...pointers.values()]; pinch0 = Math.hypot(a.x - b.x, a.y - b.y); r0 = view.r; } });
 canvas.addEventListener('pointermove', e => {
   const p = pointers.get(e.pointerId); if(!p) return;
@@ -446,18 +475,43 @@ canvas.addEventListener('pointermove', e => {
   if(pointers.size === 2){ const [a, b] = [...pointers.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y); if(pinch0) view.r = r0 * pinch0 / d; }
 });
 ['pointerup', 'pointercancel'].forEach(ev => canvas.addEventListener(ev, e => { pointers.delete(e.pointerId); pinch0 = 0; }));
-canvas.addEventListener('wheel', e => { e.preventDefault(); view.r *= Math.exp(e.deltaY * 0.001); }, { passive: false });
-$('view').addEventListener('click', () => Object.assign(view, { ...home, target: home.target.clone() }));
+canvas.addEventListener('wheel', e => { e.preventDefault(); userMoved = true; view.r *= Math.exp(e.deltaY * 0.001); }, { passive: false });
+$('view').addEventListener('click', () => { userMoved = false; resize(); });
 
+/* Fit the desk into the part of the screen the panels leave free, whatever the device and orientation.
+   Phone portrait: the band between the status pill and the tool buttons.
+   Phone landscape: the gap between the status panel and the keypad.
+   Desktop: the whole window. The desk is about 2.6 m wide and 1.9 m tall as seen from the default angle. */
+let userMoved = false;
+const rectOf = sel => document.querySelector(sel).getBoundingClientRect();
 function resize(){
-  const w = innerWidth, h = innerHeight;
+  const w = canvas.clientWidth || innerWidth, h = canvas.clientHeight || innerHeight;
+  const portrait = w < 760, compact = !portrait && h <= 520;
+  const root = document.documentElement.style;
+  root.setProperty('--th', document.querySelector('.title').offsetHeight + 'px');
+  root.setProperty('--hs', document.querySelector('.handset').offsetHeight + 'px');
   renderer.setSize(w, h, false); camera.aspect = w / h;
-  camera.fov = w < 760 ? 50 : 38;
-  if(w < 760){ home.r = 5.6; home.target = new THREE.Vector3(0.05, 0.5, 0.1); }
+  camera.fov = portrait ? 50 : 38;
+
+  let x0 = 0, x1 = w, y0 = 0, y1 = h;
+  if(portrait){ y0 = rectOf('.readout').bottom + 8; y1 = rectOf('.tools').top - 8; }
+  else if(compact){ x0 = rectOf('.readout').right + 8; x1 = rectOf('.handset').left - 8; y0 = rectOf('.tools').bottom + 4; y1 = h - 8; }
+  const fw = Math.max(120, x1 - x0), fh = Math.max(120, y1 - y0);
+  const k = 2 * Math.tan(camera.fov * Math.PI / 360) / h;               // world metres per pixel at distance 1
+  const fit = Math.max(2.6 / (k * fw), 1.9 / (k * fh));
+  home.r = portrait || compact ? fit : Math.max(4.0, fit);
+  const dx = (x0 + x1) / 2 - w / 2, dy = (y0 + y1) / 2 - h / 2;       // shift the picture into the free area
+  if(Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) camera.setViewOffset(w, h, -dx, -dy, w, h); else camera.clearViewOffset();
+  if(!userMoved) Object.assign(view, { ...home, target: home.target.clone() });
   camera.updateProjectionMatrix();
+  dirty = true;
 }
-addEventListener('resize', resize); resize();
-Object.assign(view, { ...home, target: home.target.clone() });
+let resizeTimer = 0;
+const queueResize = () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(resize, 120); };   // orientation changes report late on iOS
+addEventListener('resize', queueResize); addEventListener('orientationchange', queueResize);
+if(window.visualViewport) visualViewport.addEventListener('resize', queueResize);
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(resize);                    // panel heights change once Barlow loads
+resize();
 
 /* ------------------------------------------------------------ preview tools */
 let demoRun = 0, orbitting = false;
@@ -480,19 +534,19 @@ $('demo').addEventListener('click', async () => {
 $('obstacle').addEventListener('click', async () => {
   stopDemo(); const b = $('obstacle'); b.disabled = true;
   if(sim.h < 1000){ gotoMM(1150); say('Raising before the test'); await idle(); }
-  obstacleOn = true; obstacle.visible = true; say('A cabinet with a box is now under the return');
+  obstacleOn = true; obstacle.visible = true; dirty = true; say('A cabinet with a box is now under the return');
   await new Promise(r => { const t = setInterval(() => { if(obstacleY >= 1){ clearInterval(t); r(); } }, 50); });
   await wait(0.6); await tap('p1'); say('Lowering to preset 1 with the obstacle in the way');
   await idle(); await wait(2.5);
   obstacleOn = false; say('Obstacle removed. Lower again to continue');
   await new Promise(r => { const t = setInterval(() => { if(obstacleY <= 0){ clearInterval(t); r(); } }, 50); });
-  obstacle.visible = false; b.disabled = false;
+  obstacle.visible = false; dirty = true; b.disabled = false;
 });
 $('fast').addEventListener('click', e => { speedMul = speedMul === 1 ? 4 : 1; e.currentTarget.setAttribute('aria-pressed', speedMul > 1); });
 $('sound').addEventListener('click', e => { sound = !sound; e.currentTarget.setAttribute('aria-pressed', sound); });
 
 /* ------------------------------------------------------------ frame loop */
-let last = performance.now();
+let last = performance.now(), lastSig = '';
 function frame(t){
   const real = Math.min(0.05, (t - last) / 1000); last = t;
   now += real;
@@ -528,7 +582,10 @@ function frame(t){
 
   if(orbitting) view.theta += real * 0.12;
   placeCamera();
-  renderer.render(scene, camera);
+  // skip the GPU work on frames where nothing visible changed (an idle desk costs almost no battery)
+  const sig = [sim.h.toFixed(2), sim.off[0].toFixed(2), sim.off[1].toFixed(2), sim.off[2].toFixed(2), obstacleY.toFixed(3),
+    view.theta.toFixed(4), view.phi.toFixed(4), view.r.toFixed(3)].join('|');
+  if(dirty || sig !== lastSig){ lastSig = sig; dirty = false; renderer.render(scene, camera); }
   requestAnimationFrame(frame);
 }
 say('Ready. Hold ▲ to raise the desk');
